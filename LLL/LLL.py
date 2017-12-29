@@ -22,8 +22,8 @@ class LLL(object):
     port = 443
 
     def __init__(self):
-        self.transport = THttpClient.THttpClient(LLL.host, LLL.port, LLL.http_query_path)
-        # self.transport = THttpClient.THttpClient("http://" + LLL.host + ":" +  str(LLL.port) + LLL.http_query_path)
+        # self.transport = THttpClient.THttpClient(LLL.host, LLL.port, LLL.http_query_path)
+        self.transport = THttpClient.THttpClient("https://" + LLL.host + ":" +  str(LLL.port) + LLL.http_query_path)
         self.transport.setCustomHeaders({
             "User-Agent" : LLL.UA,
             "X-Line-Application" : LLL.LA,
@@ -43,8 +43,8 @@ class LLL(object):
        r = self.client.getRSAKeyInfo(IdentityProvider.LINE)
        
        data = (chr(len(r.sessionKey)) + r.sessionKey 
-                + chr(len(self.userid)) + userid 
-                + chr(len(self.password)) + password)
+                + chr(len(self.userid)) + self.userid 
+                + chr(len(self.password)) + self.password)
        
        pub = rsa.PublicKey(int(r.nvalue, 16), int(r.evalue, 16))
        cipher = rsa.encrypt(data, pub).encode('hex')
@@ -52,6 +52,7 @@ class LLL(object):
        login_request = loginRequest()
        login_request.type = 0
        login_request.identityProvider = IdentityProvider.LINE
+       login_request.identifier = r.keynm
        login_request.password = cipher
        login_request.keepLoggedIn = 1
        login_request.accessLocation = "127.0.0,1"
@@ -77,9 +78,14 @@ class LLL(object):
 
        elif r.type == LoginResultType.REQUIRE_DEVICE_CONFIRM:
            print("the pincode is {}".format(r.pinCode))
-           verifier = requests.get(url="http://gd2.line.naver.jp/Q", headers={ "X-Line-Access" : r.verifier }).json()["result"]["verifier"]
-           login_request.verifier = verifier
-           r = self.client.loginZ(login_request)
+           verifier = requests.get(url="http://gd2.line.naver.jp/Q", headers={ "X-Line-Access" : r.verifier }).json()["result"]["verifier"].encode("utf-8")
+          
+           # verifier_request = loginRequest()
+           # verifier_request.verifier = verifier
+           # r = self.client.loginZ(verifier_request)
+            
+           self.transport.path = LLL.auth_query_path
+           r = self.client.loginWithVerifierForCertificate(verifier)
 
            self.authToken = r.authToken
            self.certificate = r.certificate
