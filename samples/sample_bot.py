@@ -1,4 +1,5 @@
 from LLL.LCL import lll_client
+from LLL.legy_types import * 
 
 class OpType(object):
     END_OF_OPERATION = 0
@@ -61,7 +62,7 @@ class OpType(object):
     NOTIFIED_CHAT_CONTENT = 58
     NOTIFIED_PUSH_NOTICENTER_ITEM = 59
 
-l = LLL()
+l = lll_client()
 
 op = None
 rev = l.getLastOpRevision()

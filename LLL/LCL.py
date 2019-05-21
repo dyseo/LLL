@@ -1,4 +1,5 @@
-from src.LLL_core import LLL_core
+from .LLL_core import LLL_core
+from .legy_types import LEGY_ENDPOINT
 
 class lll_client(LLL_core):
   
@@ -11,5 +12,5 @@ class lll_client(LLL_core):
   def fetchOperations(self, localRev, count):
     self.set_endpoint(LEGY_ENDPOINT.LONG_POLLING)
     ret = self.client.fetchOperations(localRev, count)
-    self.client.set_endpoint(LEGY_ENDPOINT.NORMAL)
+    self.set_endpoint(LEGY_ENDPOINT.NORMAL)
     return ret
