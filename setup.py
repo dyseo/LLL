@@ -17,7 +17,7 @@ DESCRIPTION = 'LLL makes your LINE great again'
 URL = 'https://github.com/roppinhoppin/LLL'
 EMAIL = 'roppinhoppin@gmail.com'
 AUTHOR = 'roppinhoppin'
-# REQUIRES_PYTHON = '>=3.6.0'
+REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
@@ -103,7 +103,8 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    #packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    packages=["LLL",],
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
