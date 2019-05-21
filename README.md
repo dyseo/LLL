@@ -11,3 +11,7 @@ l = LLL() # now you can see a qr code in terminal
 
 l.getProfile()
 ```
+
+##### TODO
+- Polling API
+- Add more thrift functions 
