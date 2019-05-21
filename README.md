@@ -15,3 +15,4 @@ l.getProfile()
 ##### TODO
 - Polling API
 - Add more thrift functions 
+- authtoken login
