@@ -9,6 +9,8 @@ from . import TalkService
 from . import LineLoginService
 from .ttypes import LoginRequest
 
+from .legy_types import *
+
 import pyqrcode
 
 _session = requests.session()
@@ -27,16 +29,13 @@ class LLL_core(object):
     UA = "Line/7.14.0 iPad5,1 10.2.0"
     LA = "IOSIPAD\t7.14.0\tiPhone OS\t10.12.0"
 
-    auth_query_path = "/api/v4/TalkService.do"
-    http_query_path = "/S4"
-    login_query_path = "/api/v4p/rs"
     wait_for_mobile_path = "/Q"
     host = "gd2.line.naver.jp"
     port = 443
 
     def __init__(self):
-        # self.transport = THttpClient.THttpClient(LLL_core.host, LLL_core.port, LLL_core.http_query_path)
-        self.transport = THttpClient.THttpClient("https://" + LLL_core.host + ":" +  str(LLL_core.port) + LLL_core.http_query_path)
+        # self.transport = THttpClient.THttpClient(LLL_core.host, LLL_core.port, LEGY_ENDPOINT.NORMAL)
+        self.transport = THttpClient.THttpClient("https://" + LLL_core.host + ":" +  str(LLL_core.port) + LEGY_ENDPOINT.NORMAL)
         self.transport.setCustomHeaders({
             "User-Agent" : LLL_core.UA,
             "X-Line-Application" : LLL_core.LA,
@@ -52,7 +51,7 @@ class LLL_core(object):
         self.qr_login()
 
     def qr_login(self):
-        self.transport.path = LLL_core.auth_query_path
+        self.transport.path = LEGY_ENDPOINT.REGISTRATION
         qrcode = self.client.getAuthQrcode(keepLoggedIn=1, systemName='LLL')
         url = "line://au/q/" + qrcode.verifier 
         print_qr(url)
@@ -61,12 +60,12 @@ class LLL_core(object):
                 'User-Agent': LLL_core.UA, 
                 'X-Line-Application': LLL_core.LA, 
                 'x-lal' : 'ja-US_US',
-                'x-lpqs' : LLL_core.auth_query_path,
+                'x-lpqs' : LEGY_ENDPOINT.REGISTRATION,
                 'X-Line-Access': qrcode.verifier }
         
         getAccessKey = getJson('https://' + LLL_core.host + LLL_core.wait_for_mobile_path, header)
 
-        self.transport.path = LLL_core.login_query_path
+        self.transport.path = LEGY_ENDPOINT.AUTH_REGISTRATION
         req = LoginRequest()
         req.type = 1
         req.verifier = qrcode.verifier
@@ -84,7 +83,7 @@ class LLL_core(object):
                "X-Line-Access" : self.authToken
         })
 
-        self.transport.path = LLL_core.http_query_path
+        self.transport.path = LEGY_ENDPOINT.NORMAL
  
 
     def setup_by_normal_login(self, userid, password):
@@ -93,7 +92,7 @@ class LLL_core(object):
         self.userid = userid
         self.password = password
 
-        self.transport.path = LLL_core.auth_query_path
+        self.transport.path = LEGY_ENDPOINT.REGISTRATION
         r = self.login_client.getRSAKeyInfo(IdentityProvider.LINE)
 
         data = (chr(len(r.sessionKey)) + r.sessionKey 
@@ -113,7 +112,7 @@ class LLL_core(object):
         login_request.systemName = "LLL"
         login_request.e2eeVersion = 1
 
-        self.transport.path = LLL_core.login_query_path
+        self.transport.path = LEGY_ENDPOINT.AUTH_REGISTRATION
         r = self.login_client.loginZ(login_request)
 
         if r.type == LoginResultType.SUCCESS:
@@ -138,7 +137,7 @@ class LLL_core(object):
            # verifier_request.verifier = verifier
            # r = self.login_client.loginZ(verifier_request)
             
-           self.transport.path = LLL_core.auth_query_path
+           self.transport.path = LEGY_ENDPOINT.REGISTRATION
            r = self.login_client.loginWithVerifierForCertificate(verifier)
 
            self.authToken = r.authToken
@@ -147,5 +146,8 @@ class LLL_core(object):
         else:
            print("unimplemented functionality {}".format(r.type))
 
-        self.transport.path = LLL_core.http_query_path
+        self.transport.path = LEGY_ENDPOINT.NORMAL
+
+    def set_endpoint(self, path):
+        self.transport.path = path
 
