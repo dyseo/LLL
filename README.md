@@ -6,8 +6,9 @@ LLL is currently only compatible to logging in through QR authentication so in c
 #### Example
 
 ```
-from LLL import LLL
-l = LLL() # now you can see a qr code in terminal
+from LLL.LCL import lll_client
+
+l = lll_client() # now you can see a qr code in terminal
 
 l.getProfile()
 ```
