@@ -73,5 +73,8 @@ while True:
   rev = max(op.revision, rev)
 
   if op.type == OpType.RECEIVE_MESSAGE:
-    print(op)
+    m = op.message
+    m.to = m.from_
+
+    l.sendMessage(0, m)
 
