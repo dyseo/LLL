@@ -6,11 +6,10 @@ LLL is currently only compatible to logging in through QR authentication so in c
 #### Example
 
 ```
-from LLL.LCL import lll_client
+from LLL.cilent import LineClient
 
-l = lll_client() # now you can see a qr code in terminal
-
-l.getProfile()
+cli = LineClient()
+cli.qr_login()
 ```
 
 ##### TODO
