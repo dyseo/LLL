@@ -3,6 +3,15 @@
 #### DISCLAIMER
 LLL is currently only compatible to logging in through QR authentication so in case if you'd like email login, please notice that part of code is still WIP. 
 
+#### Installation
+
+```
+git clone https://github.com/roppinhoppin/LLL
+cd LLL
+pip install -r requirements.txt
+python setup.py install
+```
+
 #### Example
 
 ```
