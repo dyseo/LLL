@@ -2,16 +2,11 @@ import pyqrcode
 import requests
 import json
 import os
-
+import rsa
 import thriftpy2
 from thriftpy2.http import THttpClient
 from thriftpy2.protocol import TCompactProtocol
 from thriftpy2.thrift import TClient
-
-
-def print_qr(uri):
-    print(pyqrcode.create(uri).terminal('green', 'white', 1))
-
 
 class LineClient(object):
     
@@ -30,22 +25,99 @@ class LineClient(object):
         self.transport.open()
         self.client = TClient(self.line_thrift.LineService, self.protocol)
         self._session = requests.session()
+        
+    def __write_val(self, data):
+        return (chr(len(data)) + data)
 
+    def __gen_message(self, tuple_msg):
+        return (''.join(tuple_msg)).encode('utf-8')
+
+    def __rsa_crypt(self, message,RSA):
+        pub_key = rsa.PublicKey(int(RSA.nvalue, 16), int(RSA.evalue, 16))
+        crypto  = rsa.encrypt(message, pub_key)
+        return crypto
+
+    def _encryptedEmailAndPassword(self, mail, passwd, RSA):
+        message_ = (
+			self.__write_val(RSA.sessionKey),
+			self.__write_val(mail),
+			self.__write_val(passwd),
+        )
+        message = self.__gen_message(message_)
+        crypto  = self.__rsa_crypt(message, RSA).hex()
+        return crypto
+
+    def wait_for_confirm(self, verifier):
+        r = requests.get("https://gd2.line.naver.jp/Q", headers={
+        		"User-Agent": LEGY_ENDPOINT.UA,
+        		"X-Line-Application": LEGY_ENDPOINT.LA,
+        		"x-lal": "ja-US_US",
+        		"x-lpqs": LEGY_ENDPOINT.REGISTRATION,
+			"X-Line-Access": verifier
+        })
+        return r.json()
+ 
+    def email_login(self, email, password, cert=None):
+        self.transport.path = LEGY_ENDPOINT.REGISTRATION
+        rsa_key = self.client.getRSAKeyInfo(1)
+        crypt  = self._encryptedEmailAndPassword(email, password, rsa_key)
+        self.transport.path = LEGY_ENDPOINT.AUTH_REGISTRATION
+        req = self.line_thrift.loginRequest()
+        req.type = 0
+        req.identityProvider = 3
+        req.identifier = rsa_key.keynm
+        req.password = crypt
+        req.keepLoggedIn = True
+        req.accessLocation = "127.0.0.0"
+        req.systemName = "LLL"
+        req.certificate = cert
+        req.verifier = None
+        req.secret = crypt.encode() if type(crypt) == str else crypt
+        req.e2eeVersion = 2
+        result = self.client.loginZ(req)
+        self.transport.path = LEGY_ENDPOINT.REGISTRATION
+        if result.type == 3:
+            print("Check your phone and input this pin %s"% (result.pinCode))
+            r = self.wait_for_confirm(result.verifier)
+            req = self.line_thrift.loginRequest(
+				1,
+				1,
+				None, None, True,
+				"127.0.0.0",
+				"LLL",
+				cert, r['result']['verifier'],
+				None, 
+				2
+            	)
+            self.transport.path = LEGY_ENDPOINT.AUTH_REGISTRATION
+            result = self.client.loginZ(req)
+            self.authToken = result.authToken
+            self.certificate = result.certificate
+            self.transport.setCustomHeaders({
+            	"User-Agent": LEGY_ENDPOINT.UA,
+            	"X-Line-Application": LEGY_ENDPOINT.LA,
+            	"X-Line-Access": self.authToken
+           })
+        if result.type == 1:
+            self.transport.path = LEGY_ENDPOINT.AUTH_REGISTRATION
+            result = self.client.loginZ(req)
+            self.authToken = result.authToken
+            self.certificate = result.certificate
+            self.transport.setCustomHeaders({
+            	"User-Agent": LEGY_ENDPOINT.UA,
+            	"X-Line-Application": LEGY_ENDPOINT.LA,
+            	"X-Line-Access": self.authToken
+           })
+           
+        self.transport.path = LEGY_ENDPOINT.NORMAL
+           
     def qr_login(self):
         self.transport.path = LEGY_ENDPOINT.REGISTRATION
         qrcode = self.client.getAuthQrcode(keepLoggedIn=1, systemName='LLL')
         url = "line://au/q/" + qrcode.verifier
-        print_qr(url)
-
-        header = {
-            "User-Agent": LEGY_ENDPOINT.UA,
-            "X-Line-Application": LEGY_ENDPOINT.LA,
-            "x-lal": "ja-US_US",
-            "x-lpqs": LEGY_ENDPOINT.REGISTRATION,
-            "X-Line-Access": qrcode.verifier
-        }
-
-        getAccessKey = json.loads(self._session.get("https://gd2.line.naver.jp/Q", headers=header).text)
+        #Some user have confuced using Qrcode, so just print URL
+        print(url)
+        getAccessKey = self.wait_for_confirm(qrcode.verifier)
         self.transport.path = LEGY_ENDPOINT.AUTH_REGISTRATION
         req = self.line_thrift.loginRequest()
         req.type = 1
